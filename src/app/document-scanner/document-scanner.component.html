@@ -19,9 +19,13 @@
 
 <!-- Buttons for camera control and photo capture -->
 <div>
-  <button (click)="startCamera()">Start Camera</button>
-  <button (click)="stopCamera()" [disabled]="!cameraActive">Stop Camera</button>
-  <button (click)="takePhoto()" [disabled]="!cameraActive">Take Photo</button>
+  <button class="button-6" (click)="startCamera()">Start Camera</button>
+  <button class="button-6" (click)="stopCamera()" [disabled]="!cameraActive">
+    Stop Camera
+  </button>
+  <button class="button-6" (click)="takePhoto()" [disabled]="!cameraActive">
+    Take Photo
+  </button>
 </div>
 
 <!-- Canvas to display the captured photo -->
@@ -54,7 +58,7 @@
 <br />
 
 <!-- Process button to trigger document scanning -->
-<button (click)="processImage()">Process</button>
+<button class="button-6" (click)="processImage()">Process</button>
 
 <!-- Div to display processing time -->
 <div style="font-weight: bold; margin-top: 10px">{{ processingTime }}</div>
@@ -66,4 +70,4 @@
 <img *ngIf="outputImage" [src]="outputImage" alt="Scanned Document" />
 
 <h1>Download Photo</h1>
-<button (click)="downloadPhoto()">Download Photo</button>
+<button class="button-6" (click)="downloadPhoto()">Download Photo</button>

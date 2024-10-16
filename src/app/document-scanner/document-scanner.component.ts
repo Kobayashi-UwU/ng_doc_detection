@@ -59,7 +59,11 @@ export class DocumentScannerComponent {
   // Stop the camera
   stopCamera() {
     if (this.stream) {
+      // Stop all media tracks in the stream
       this.stream.getTracks().forEach((track) => track.stop());
+
+      // Clear the stream and the video source
+      this.video.nativeElement.srcObject = null; // Remove video stream
       this.stream = null as any;
       this.cameraActive = false;
     }
@@ -80,34 +84,56 @@ export class DocumentScannerComponent {
   }
 
   // Process image
+  // Process image
   processImage() {
     const startTime = performance.now();
 
     const canvas = this.canvas.nativeElement;
     const img = cv.imread(canvas);
+    const originalImage = img.clone(); // Clone the original image
+    const original_width = originalImage.cols; // cols for width in OpenCV
+    const original_height = originalImage.rows; // rows for height in OpenCV
 
-    // Make sure to use the image before any deletion
-    const colorImg = new cv.Mat();
-    cv.cvtColor(img, colorImg, cv.COLOR_RGBA2BGR);
+    // Resize the image
+    const resized_height = 240;
+    const resized_width = 180;
+    const resizedImg = new cv.Mat();
+    cv.resize(img, resizedImg, new cv.Size(resized_width, resized_height));
 
+    // Calculate scale factors for width and height
+    const widthScale = original_width / resized_width;
+    const heightScale = original_height / resized_height;
+
+    // Convert to grayscale
     const grayImg = new cv.Mat();
-    cv.cvtColor(img, grayImg, cv.COLOR_RGBA2GRAY);
+    cv.cvtColor(resizedImg, grayImg, cv.COLOR_RGBA2GRAY);
+
+    // Apply Gaussian blur
+    const blurredImg = new cv.Mat();
+    cv.GaussianBlur(grayImg, blurredImg, new cv.Size(5, 5), 1);
 
     // Apply Canny edge detection
-    cv.Canny(grayImg, grayImg, this.threshold1, this.threshold2, 3, false);
+    cv.Canny(
+      blurredImg,
+      blurredImg,
+      this.threshold1,
+      this.threshold2,
+      3,
+      false
+    );
 
     // Find contours
     const contours = new cv.MatVector();
     const hierarchy = new cv.Mat();
     cv.findContours(
-      grayImg,
+      blurredImg,
       contours,
       hierarchy,
       cv.RETR_CCOMP,
       cv.CHAIN_APPROX_SIMPLE
     );
 
-    // If no biggest contour, find the bounding rectangle of the largest contour
+    // Find the bounding rectangle of the largest contour
     let largestContour = null;
     let maxArea = 0;
     for (let i = 0; i < contours.size(); i++) {
@@ -123,12 +149,23 @@ export class DocumentScannerComponent {
       // Find the bounding rectangle of the largest contour
       const rect = cv.boundingRect(largestContour);
 
-      // Draw bounding rectangle on the color image
+      // Scale the rectangle back to original image size
+      const originalRect = {
+        x: Math.round(rect.x * widthScale),
+        y: Math.round(rect.y * heightScale),
+        width: Math.round(rect.width * widthScale),
+        height: Math.round(rect.height * heightScale),
+      };
+
+      // Draw bounding rectangle on the original image
       const boundingColor = new cv.Scalar(0, 255, 0); // Green
       cv.rectangle(
-        colorImg,
-        new cv.Point(rect.x, rect.y),
-        new cv.Point(rect.x + rect.width, rect.y + rect.height),
+        originalImage,
+        new cv.Point(originalRect.x, originalRect.y),
+        new cv.Point(
+          originalRect.x + originalRect.width,
+          originalRect.y + originalRect.height
+        ),
         boundingColor,
         2
       );
@@ -136,13 +173,16 @@ export class DocumentScannerComponent {
       // Draw corner circles
       const cornerColor = new cv.Scalar(0, 0, 255); // Red
       const corners = [
-        new cv.Point(rect.x, rect.y),
-        new cv.Point(rect.x + rect.width, rect.y),
-        new cv.Point(rect.x, rect.y + rect.height),
-        new cv.Point(rect.x + rect.width, rect.y + rect.height),
+        new cv.Point(originalRect.x, originalRect.y),
+        new cv.Point(originalRect.x + originalRect.width, originalRect.y),
+        new cv.Point(originalRect.x, originalRect.y + originalRect.height),
+        new cv.Point(
+          originalRect.x + originalRect.width,
+          originalRect.y + originalRect.height
+        ),
       ];
       corners.forEach((corner) => {
-        cv.circle(colorImg, corner, 5, cornerColor, -1); // Red points
+        cv.circle(originalImage, corner, 5, cornerColor, -1); // Red points
       });
     } else {
       console.log('No contours found, unable to process image');
@@ -154,14 +194,16 @@ export class DocumentScannerComponent {
     )} ms`;
 
     // Convert Mat to data URL (the original image with contours and bounding box)
-    this.contourImage = this.convertMatToImage(colorImg);
+    this.contourImage = this.convertMatToImage(originalImage);
 
     // Clean up memory
     img.delete();
     grayImg.delete();
-    colorImg.delete();
+    resizedImg.delete();
+    blurredImg.delete();
     contours.delete();
     hierarchy.delete();
+    originalImage.delete();
   }
 
   convertMatToImage(mat: any): string {
