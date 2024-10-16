@@ -1,0 +1,69 @@
+<!-- File input to upload an image -->
+<h1>Upload Image</h1>
+<input type="file" (change)="onFileSelected($event)" accept="image/*" />
+<br /><br />
+
+<!-- Camera -->
+<h1>Upload using camera</h1>
+<!-- Dropdown to choose a camera -->
+<select [(ngModel)]="selectedCameraId">
+  <option *ngFor="let camera of cameras" [value]="camera.deviceId">
+    {{ camera.label || "Camera " + (cameras.indexOf(camera) + 1) }}
+  </option>
+</select>
+
+<!-- Video element to display the camera feed -->
+<div>
+  <video #video autoplay playsinline></video>
+</div>
+
+<!-- Buttons for camera control and photo capture -->
+<div>
+  <button (click)="startCamera()">Start Camera</button>
+  <button (click)="stopCamera()" [disabled]="!cameraActive">Stop Camera</button>
+  <button (click)="takePhoto()" [disabled]="!cameraActive">Take Photo</button>
+</div>
+
+<!-- Canvas to display the captured photo -->
+<canvas #canvas style="display: none"></canvas>
+
+<!-- Threshold sliders -->
+<h1>Adjust Threshold</h1>
+<div>
+  <label for="threshold1">Threshold 1: </label>
+  <input
+    type="range"
+    id="threshold1"
+    min="0"
+    max="255"
+    [(ngModel)]="threshold1"
+  />
+  <span>{{ threshold1 }}</span>
+</div>
+<div>
+  <label for="threshold2">Threshold 2: </label>
+  <input
+    type="range"
+    id="threshold2"
+    min="0"
+    max="255"
+    [(ngModel)]="threshold2"
+  />
+  <span>{{ threshold2 }}</span>
+</div>
+<br />
+
+<!-- Process button to trigger document scanning -->
+<button (click)="processImage()">Process</button>
+
+<!-- Div to display processing time -->
+<div style="font-weight: bold; margin-top: 10px">{{ processingTime }}</div>
+
+<!-- Display drew contour -->
+<img *ngIf="contourImage" [src]="contourImage" alt="Scanned Document" />
+
+<!-- Display drew rectangle -->
+<img *ngIf="outputImage" [src]="outputImage" alt="Scanned Document" />
+
+<h1>Download Photo</h1>
+<button (click)="downloadPhoto()">Download Photo</button>
