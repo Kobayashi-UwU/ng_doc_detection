@@ -15,6 +15,7 @@ export class DocumentScannerComponent {
   processingTime: string = '';
   contourImage: string = '';
   outputImage: string = '';
+  imageInfo: string = '';
 
   cameras: MediaDeviceInfo[] = [];
   cameraActive = false;
@@ -44,6 +45,8 @@ export class DocumentScannerComponent {
         deviceId: this.selectedCameraId
           ? { exact: this.selectedCameraId }
           : undefined,
+        width: { ideal: 1920 }, // Desired width
+        height: { ideal: 1080 }, // Desired height
       },
     };
 
@@ -93,6 +96,14 @@ export class DocumentScannerComponent {
     const originalImage = img.clone(); // Clone the original image
     const original_width = originalImage.cols; // cols for width in OpenCV
     const original_height = originalImage.rows; // rows for height in OpenCV
+
+    // log information
+    console.log('Image Width:', original_width);
+    console.log('Image Height:', original_height);
+    console.log('Resolution:', `${original_width} x ${original_height}`);
+
+    // Display the information in the UI
+    this.imageInfo = `Width: ${original_width}, Height: ${original_height}, Resolution: ${original_width} x ${original_height}`;
 
     // Resize the image
     const resized_height = 240;

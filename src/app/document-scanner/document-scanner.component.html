@@ -13,9 +13,7 @@
 </select>
 
 <!-- Video element to display the camera feed -->
-<div>
-  <video #video autoplay playsinline></video>
-</div>
+<video #video autoplay playsinline></video>
 
 <!-- Buttons for camera control and photo capture -->
 <div>
@@ -26,6 +24,10 @@
   <button class="button-6" (click)="takePhoto()" [disabled]="!cameraActive">
     Take Photo
   </button>
+</div>
+
+<div>
+  <p>{{ imageInfo }}</p>
 </div>
 
 <!-- Canvas to display the captured photo -->
