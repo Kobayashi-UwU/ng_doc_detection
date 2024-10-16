@@ -24,6 +24,10 @@
   <button class="button-6" (click)="takePhoto()" [disabled]="!cameraActive">
     Take Photo
   </button>
+  <!-- Button to rotate the captured image -->
+  <button class="button-6" (click)="rotateImage()" [disabled]="!cameraActive">
+    Rotate Image 90°
+  </button>
 </div>
 
 <div>

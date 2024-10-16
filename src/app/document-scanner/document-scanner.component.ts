@@ -45,8 +45,9 @@ export class DocumentScannerComponent {
         deviceId: this.selectedCameraId
           ? { exact: this.selectedCameraId }
           : undefined,
-        width: { ideal: 1920 }, // Desired width
-        height: { ideal: 1080 }, // Desired height
+        aspectRatio: 9 / 16, // Force landscape mode
+        width: { ideal: 1080 }, // Horizontal resolution
+        height: { ideal: 1920 }, // Vertical resolution
       },
     };
 
@@ -87,7 +88,6 @@ export class DocumentScannerComponent {
   }
 
   // Process image
-  // Process image
   processImage() {
     const startTime = performance.now();
 
@@ -97,7 +97,7 @@ export class DocumentScannerComponent {
     const original_width = originalImage.cols; // cols for width in OpenCV
     const original_height = originalImage.rows; // rows for height in OpenCV
 
-    // log information
+    // Log image type and other info
     console.log('Image Width:', original_width);
     console.log('Image Height:', original_height);
     console.log('Resolution:', `${original_width} x ${original_height}`);
@@ -121,7 +121,7 @@ export class DocumentScannerComponent {
 
     // Apply Gaussian blur
     const blurredImg = new cv.Mat();
-    cv.GaussianBlur(grayImg, blurredImg, new cv.Size(5, 5), 1);
+    cv.GaussianBlur(grayImg, blurredImg, new cv.Size(3, 3), 3);
 
     // Apply Canny edge detection
     cv.Canny(
@@ -254,5 +254,40 @@ export class DocumentScannerComponent {
       };
     };
     reader.readAsDataURL(file);
+  }
+
+  // Add this property to store the current rotation angle
+  currentRotation: number = 0;
+
+  // Rotate the captured image by 90 degrees
+  rotateImage() {
+    const canvas = this.canvas.nativeElement;
+    const context = canvas.getContext('2d');
+    const video = this.video.nativeElement;
+
+    // Increment the rotation angle by 90 degrees
+    this.currentRotation = (this.currentRotation + 90) % 360;
+
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Save the context state
+    context.save();
+
+    // Translate and rotate the canvas
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate((this.currentRotation * Math.PI) / 180);
+
+    // Draw the video feed on the canvas after rotating
+    context.drawImage(
+      video,
+      -canvas.width / 2,
+      -canvas.height / 2,
+      canvas.width,
+      canvas.height
+    );
+
+    // Restore the context state
+    context.restore();
   }
 }
