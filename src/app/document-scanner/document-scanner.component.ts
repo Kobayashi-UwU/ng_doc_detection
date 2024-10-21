@@ -1,4 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import * as tf from '@tensorflow/tfjs';
+import { YoloService } from '../yolo.service';
 declare var cv: any;
 
 @Component({
@@ -16,16 +18,26 @@ export class DocumentScannerComponent {
   contourImage: string = '';
   outputImage: string = '';
   imageInfo: string = '';
+  yoloImage: string = '';
 
   cameras: MediaDeviceInfo[] = [];
   cameraActive = false;
   threshold1 = 150;
   threshold2 = 50;
 
-  constructor() {}
+  loading: boolean = true;
+  progress: number = 0;
+  model: any = {
+    net: null,
+    inputShape: [1, 640, 640, 3],
+  };
 
-  ngOnInit() {
-    this.getCameras();
+  constructor(private yoloService: YoloService) {}
+
+  async ngOnInit() {
+    await this.getCameras();
+    await this.yoloService.loadModel();
+    this.loading = false;
   }
 
   // Get available cameras
@@ -45,9 +57,9 @@ export class DocumentScannerComponent {
         deviceId: this.selectedCameraId
           ? { exact: this.selectedCameraId }
           : undefined,
-        aspectRatio: 9 / 16, // Force landscape mode
-        width: { ideal: 1080 }, // Horizontal resolution
-        height: { ideal: 1920 }, // Vertical resolution
+        aspectRatio: 9 / 16,
+        width: { ideal: 1080 },
+        height: { ideal: 1920 },
       },
     };
 
@@ -88,7 +100,7 @@ export class DocumentScannerComponent {
   }
 
   // Process image
-  processImage() {
+  async processImage() {
     const startTime = performance.now();
 
     const canvas = this.canvas.nativeElement;
@@ -204,23 +216,44 @@ export class DocumentScannerComponent {
       2
     )} ms`;
 
-    // Convert Mat to data URL (the original image with contours and bounding box)
-    this.contourImage = this.convertMatToImage(originalImage);
+    try {
+      // Convert Mat to data URL (the original image with contours and bounding box)
+      this.contourImage = this.convertMatToImage(originalImage);
 
-    // Clean up memory
-    img.delete();
-    grayImg.delete();
-    resizedImg.delete();
-    blurredImg.delete();
-    contours.delete();
-    hierarchy.delete();
-    originalImage.delete();
+      // Process and Display yolo
+      this.yoloImage = await this.yoloService.processYolo(img);
+    } catch (error) {
+      console.error('Error processing image:', error);
+    } finally {
+      // Clean up memory after YOLO processing completes
+      img.delete();
+      originalImage.delete();
+
+      // Clean up memory
+      grayImg.delete();
+      resizedImg.delete();
+      blurredImg.delete();
+      contours.delete();
+      hierarchy.delete();
+    }
   }
 
   convertMatToImage(mat: any): string {
+    if (!mat || mat.isDeleted()) {
+      console.error(
+        'Mat object has been deleted or is null, cannot convert to image'
+      );
+      return '';
+    }
+
     const canvas = document.createElement('canvas');
     cv.imshow(canvas, mat);
-    return canvas.toDataURL();
+    const imageData = canvas.toDataURL();
+
+    // Clean up the temporary canvas
+    canvas.remove();
+
+    return imageData;
   }
 
   // Download the processed image
