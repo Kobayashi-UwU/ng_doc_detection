@@ -11,7 +11,7 @@ export class YoloService {
     inputShape: [1, 640, 640, 3],
   };
 
-  classNames: string[] = ['driving_license', 'id_card'];
+  classNames: string[] = ['driving_license', 'id_card', 'passport'];
 
   constructor() {}
 
