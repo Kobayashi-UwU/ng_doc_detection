@@ -1,5 +1,4 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import * as tf from '@tensorflow/tfjs';
 import { YoloService } from '../yolo.service';
 declare var cv: any;
 
@@ -15,6 +14,7 @@ export class DocumentScannerComponent {
   selectedCameraId: string = '';
   stream!: MediaStream; // Or initialize as null: stream: MediaStream | null = null;
   processingTime: string = '';
+  yoloprocessingTime: string = '';
   contourImage: string = '';
   outputImage: string = '';
   imageInfo: string = '';
@@ -220,8 +220,13 @@ export class DocumentScannerComponent {
       // Convert Mat to data URL (the original image with contours and bounding box)
       this.contourImage = this.convertMatToImage(originalImage);
 
+      const startTime = performance.now();
       // Process and Display yolo
       this.yoloImage = await this.yoloService.processYolo(img);
+      const endTime = performance.now();
+      this.yoloprocessingTime = `YOLO Processing Time: ${(
+        endTime - startTime
+      ).toFixed(2)} ms`;
     } catch (error) {
       console.error('Error processing image:', error);
     } finally {

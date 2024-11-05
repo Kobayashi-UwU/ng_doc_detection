@@ -8,10 +8,19 @@ declare var cv: any;
 export class YoloService {
   model: any = {
     net: null,
-    inputShape: [1, 640, 640, 3],
+    inputShape: [1, 224, 224, 3],
   };
 
-  classNames: string[] = ['driving_license', 'id_card', 'passport'];
+  classNames: string[] = [
+    'card_id',
+    'driving_license',
+    'glasses',
+    'hat',
+    'mask',
+    'passport',
+    'sunglasses',
+  ];
+  yoloprocessingTime: string = '';
 
   constructor() {}
 
@@ -26,7 +35,7 @@ export class YoloService {
     });
 
     // Warm up the model
-    const dummyInput = tf.ones([1, 640, 640, 3]);
+    const dummyInput = tf.ones([1, 224, 224, 3]);
     await this.model.net.executeAsync(dummyInput);
     tf.dispose(dummyInput);
 
@@ -34,11 +43,21 @@ export class YoloService {
   }
 
   async processYolo(img: any): Promise<string> {
-    const inputSize = 640;
-    const resizedYOLOImg = new cv.Mat();
+    const inputSize = 224;
+    let resizedYOLOImg = new cv.Mat();
 
     // Resize image for YOLO input size
     cv.resize(img, resizedYOLOImg, new cv.Size(inputSize, inputSize));
+
+    // Convert to grayscale
+    const grayImg = new cv.Mat();
+    cv.cvtColor(resizedYOLOImg, grayImg, cv.COLOR_RGBA2GRAY);
+
+    // Apply Gaussian blur
+    const blurredImg = new cv.Mat();
+    cv.GaussianBlur(grayImg, blurredImg, new cv.Size(3, 3), 3);
+
+    resizedYOLOImg = blurredImg;
 
     // Create a canvas to extract the image data
     const canvas = document.createElement('canvas');
@@ -76,9 +95,9 @@ export class YoloService {
       console.log('Classes:', classes);
 
       let detectionCount = 0;
-
+      let threshold = 0.01;
       for (let i = 0; i < boxes[0].length; i++) {
-        if (scores[0][i] > 0.4) {
+        if (scores[0][i] > threshold) {
           detectionCount++;
           const [ymin, xmin, ymax, xmax] = boxes[0][i];
 

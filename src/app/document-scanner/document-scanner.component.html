@@ -75,6 +75,7 @@
 <h3>Diaplay yolo</h3>
 <!-- Display yolo -->
 <img *ngIf="yoloImage" [src]="yoloImage" alt="Scanned Document" />
+<div style="font-weight: bold; margin-top: 10px">{{ yoloprocessingTime }}</div>
 
 <h1>Download Photo</h1>
 <button class="button-6" (click)="downloadPhoto()">Download Photo</button>
