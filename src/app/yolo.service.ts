@@ -12,7 +12,12 @@ export class YoloService {
   };
 
   classNames: string[] = [
+    'bank_acc',
     'card_id',
+    'copy_bank_acc',
+    'copy_card_id',
+    'copy_driving_license',
+    'copy_passport',
     'driving_license',
     'glasses',
     'hat',
@@ -49,13 +54,13 @@ export class YoloService {
     // Resize image for YOLO input size
     cv.resize(img, resizedYOLOImg, new cv.Size(inputSize, inputSize));
 
-    // Convert to grayscale
-    const grayImg = new cv.Mat();
-    cv.cvtColor(resizedYOLOImg, grayImg, cv.COLOR_RGBA2GRAY);
+    // // Convert to grayscale
+    // const grayImg = new cv.Mat();
+    // cv.cvtColor(resizedYOLOImg, grayImg, cv.COLOR_RGBA2GRAY);
 
     // Apply Gaussian blur
     const blurredImg = new cv.Mat();
-    cv.GaussianBlur(grayImg, blurredImg, new cv.Size(3, 3), 3);
+    cv.GaussianBlur(resizedYOLOImg, blurredImg, new cv.Size(3, 3), 3);
 
     resizedYOLOImg = blurredImg;
 
