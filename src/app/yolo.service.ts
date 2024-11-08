@@ -11,20 +11,8 @@ export class YoloService {
     inputShape: [1, 224, 224, 3],
   };
 
-  classNames: string[] = [
-    'bank_acc',
-    'card_id',
-    'copy_bank_acc',
-    'copy_card_id',
-    'copy_driving_license',
-    'copy_passport',
-    'driving_license',
-    'glasses',
-    'hat',
-    'mask',
-    'passport',
-    'sunglasses',
-  ];
+  classNames: string[] = ['bank_acc', 'card_id', 'copy_bank_acc', 'copy_card_id', 'copy_driving_license', 'copy_passport', 'driving_license', 'glasses', 'hat', 'mask', 'passport', 'sunglasses'];
+  
   yoloprocessingTime: string = '';
 
   constructor() {}
@@ -124,6 +112,7 @@ export class YoloService {
 
           const classIndex = classes[0][i];
           const className = this.classNames[classIndex];
+          console.log(className);
           const label = `${className}: ${scores[0][i].toFixed(2)}`;
           cv.putText(
             resizedYOLOImg,
