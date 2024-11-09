@@ -85,6 +85,64 @@ export class DocumentScannerComponent {
     }
   }
 
+  // Real-time YOLO processing
+  async realTimeYOLO() {
+    if (!this.cameraActive) {
+      console.log('Camera is not active.');
+      return;
+    }
+    console.log('Real-time YOLO processing');
+
+    const video = this.video.nativeElement;
+    const canvas = this.canvas.nativeElement;
+    const context = canvas.getContext('2d');
+    const interval = 1000; // 1 second for each frame
+
+    // Set canvas dimensions based on the video feed
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Capture the video frame every second and process it with YOLO
+    setInterval(async () => {
+      if (this.cameraActive) {
+        // Draw the current frame onto the canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Capture the current frame as a Mat object for processing
+        const img = cv.imread(canvas);
+        
+        // Process the YOLO detection on the frame
+        try {
+          const startTime = performance.now();
+          const yoloImage = await this.yoloService.processYolo(img);
+          const endTime = performance.now();
+          this.yoloprocessingTime = `YOLO Processing Time: ${(endTime - startTime).toFixed(2)} ms`;
+
+          // Update the image to display YOLO results
+          this.yoloImage = yoloImage;
+        } catch (error) {
+          console.error('Error processing YOLO:', error);
+        } finally {
+          img.delete(); // Clean up memory
+        }
+      }
+    }, interval);
+  }
+
+  // Helper method to capture frame from canvas (if needed)
+  captureFrame() {
+    const canvas = this.canvas.nativeElement;
+    const context = canvas.getContext('2d');
+    const video = this.video.nativeElement;
+
+    // Set canvas size to match the video feed
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw the current video frame onto the canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
+
   // Capture a photo from the video feed
   takePhoto() {
     const canvas = this.canvas.nativeElement;
