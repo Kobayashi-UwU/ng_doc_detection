@@ -11,7 +11,11 @@ export class YoloService {
     inputShape: [1, 224, 224, 3],
   };
 
-  classNames: string[] = ['bank_acc', 'card_id', 'copy_bank_acc', 'copy_card_id', 'copy_driving_license', 'copy_passport', 'driving_license', 'glasses', 'hat', 'mask', 'passport', 'sunglasses'];
+  classNames: string[] = [
+    'bank_acc', 'card_id', 'copy_bank_acc', 'copy_card_id', 
+    'copy_driving_license', 'copy_passport', 'driving_license', 
+    'glasses', 'hat', 'mask', 'passport', 'sunglasses'
+  ];
   
   yoloprocessingTime: string = '';
 
@@ -35,21 +39,18 @@ export class YoloService {
     console.log('YOLO model loaded successfully');
   }
 
-  async processYolo(img: any): Promise<string> {
-    const inputSize = 224;
-    let resizedYOLOImg = new cv.Mat();
+async processYolo(img: any): Promise<string> {
+  const inputSize = 224;
+  let resizedYOLOImg = new cv.Mat();
 
+  try {
     // Resize image for YOLO input size
     cv.resize(img, resizedYOLOImg, new cv.Size(inputSize, inputSize));
-
-    // // Convert to grayscale
-    // const grayImg = new cv.Mat();
-    // cv.cvtColor(resizedYOLOImg, grayImg, cv.COLOR_RGBA2GRAY);
 
     // Apply Gaussian blur
     const blurredImg = new cv.Mat();
     cv.GaussianBlur(resizedYOLOImg, blurredImg, new cv.Size(3, 3), 3);
-
+    resizedYOLOImg.delete(); // Clean up previous Mat
     resizedYOLOImg = blurredImg;
 
     // Create a canvas to extract the image data
@@ -61,90 +62,66 @@ export class YoloService {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       console.error('Failed to get canvas 2D context');
-      resizedYOLOImg.delete();
       return '';
     }
 
-    // Get image data from canvas for YOLO input
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    // Convert image to TensorFlow tensor for YOLO input
-    const inputTensor = tf.tidy(() => {
-      return tf.browser.fromPixels(imageData).expandDims(0).div(255.0);
-    });
+    // YOLO inference
+    const inputTensor = tf.browser.fromPixels(imageData).expandDims(0).div(255.0);
+    const predictions = await this.model.net.executeAsync(inputTensor);
 
-    try {
-      const predictions = await this.model.net.executeAsync(inputTensor);
+    // Process predictions outside of tf.tidy
+    const result = this.processPredictions(predictions, resizedYOLOImg, inputSize);
 
-      // Log predictions for debugging
-      console.log('Raw predictions:', predictions);
+    tf.dispose([inputTensor, ...predictions]); // Dispose tensors
+    return result;
+  } catch (err) {
+    console.error('Error in YOLO inference:', err);
+    return '';
+  } finally {
+    resizedYOLOImg.delete(); // Clean up OpenCV Mat
+  }
+}
 
-      const boxes = await predictions[0].array();
-      const scores = await predictions[1].array();
-      const classes = await predictions[2].array();
+private processPredictions(predictions: tf.Tensor[], resizedYOLOImg: any, inputSize: number): string {
+  const [boxesTensor, scoresTensor, classesTensor] = predictions;
 
-      console.log('Boxes:', boxes);
-      console.log('Scores:', scores);
-      console.log('Classes:', classes);
+  const boxes = boxesTensor.arraySync() as number[][][];
+  const scores = scoresTensor.arraySync() as number[][];
+  const classes = classesTensor.arraySync() as number[][];
 
-      let detectionCount = 0;
-      let threshold = 0.01;
-      for (let i = 0; i < boxes[0].length; i++) {
-        if (scores[0][i] > threshold) {
-          detectionCount++;
-          const [ymin, xmin, ymax, xmax] = boxes[0][i];
+  let detectionCount = 0;
+  const threshold = 0.01;
 
-          // Use coordinates directly from YOLO output, since they're relative to the resized image
-          const y1 = Math.round(xmin * inputSize);
-          const x1 = Math.round(ymin * inputSize);
-          const y2 = Math.round(xmax * inputSize);
-          const x2 = Math.round(ymax * inputSize);
+  for (let i = 0; i < boxes[0].length; i++) {
+    if (scores[0][i] > threshold) {
+      detectionCount++;
+      const [ymin, xmin, ymax, xmax] = boxes[0][i];
+      const y1 = Math.round(xmin * inputSize);
+      const x1 = Math.round(ymin * inputSize);
+      const y2 = Math.round(xmax * inputSize);
+      const x2 = Math.round(ymax * inputSize);
 
-          // Draw bounding box for YOLO detections
-          const boundingColor = new cv.Scalar(0, 255, 0);
-          cv.rectangle(
-            resizedYOLOImg, // Draw on the resized image
-            new cv.Point(x1, y1),
-            new cv.Point(x2, y2),
-            boundingColor,
-            2
-          );
+      const boundingColor = new cv.Scalar(0, 255, 0);
+      cv.rectangle(resizedYOLOImg, new cv.Point(x1, y1), new cv.Point(x2, y2), boundingColor, 2);
 
-          const classIndex = classes[0][i];
-          const className = this.classNames[classIndex];
-          console.log(className);
-          const label = `${className}: ${scores[0][i].toFixed(2)}`;
-          cv.putText(
-            resizedYOLOImg,
-            label,
-            new cv.Point(x1, y1 - 10),
-            cv.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            boundingColor,
-            2
-          );
-        }
-      }
-
-      console.log(`Number of detections: ${detectionCount}`);
-
-      // Convert the processed resized image to a data URL
-      return this.convertMatToImage(resizedYOLOImg); // Return the resized image with boxes
-    } catch (err) {
-      console.error('Error in YOLO inference:', err);
-      return '';
-    } finally {
-      resizedYOLOImg.delete();
-      tf.dispose(inputTensor);
-      // tf.dispose(predictions);
+      const classIndex = classes[0][i];
+      const className = this.classNames[classIndex];
+      console.log("Found Object : "+className)
+      const label = `${className}: ${scores[0][i].toFixed(2)}`;
+      cv.putText(resizedYOLOImg, label, new cv.Point(x1, y1 - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, boundingColor, 2);
     }
   }
 
+  console.log(`Number of detections: ${detectionCount}`);
+  return this.convertMatToImage(resizedYOLOImg); // Convert image to base64 string
+}
+
+
   private convertMatToImage(mat: any): string {
     if (!mat || mat.isDeleted()) {
-      console.error(
-        'Mat object has been deleted or is null, cannot convert to image'
-      );
+      console.error('Mat object has been deleted or is null, cannot convert to image');
       return '';
     }
 

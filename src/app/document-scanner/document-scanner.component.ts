@@ -97,6 +97,7 @@ export class DocumentScannerComponent {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.style.display = 'block';
+    this.stopCamera();
   }
 
   // Process image
