@@ -6,6 +6,19 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Import TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+
+    <!-- Adds the WASM backend to the global backend registry -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script>
+
+    <script>
+      // Set the backend to WASM when TensorFlow is ready
+      tf.setBackend("wasm").then(() => {
+        console.log("WASM backend initialized");
+      });
+    </script>
     <script
       async
       src="https://docs.opencv.org/master/opencv.js"

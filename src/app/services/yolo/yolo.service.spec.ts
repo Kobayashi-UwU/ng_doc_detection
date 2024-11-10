@@ -1,6 +1,5 @@
-import { TestBed } from '@angular/core/testing';
-
 import { YoloService } from './yolo.service';
+import { TestBed } from '@angular/core/testing';
 
 describe('YoloService', () => {
   let service: YoloService;

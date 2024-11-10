@@ -1,5 +1,5 @@
+import { YoloService } from './../../services/yolo/yolo.service';
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { YoloService } from '../yolo.service';
 declare var cv: any;
 
 @Component({
@@ -110,13 +110,15 @@ export class DocumentScannerComponent {
 
         // Capture the current frame as a Mat object for processing
         const img = cv.imread(canvas);
-        
+
         // Process the YOLO detection on the frame
         try {
           const startTime = performance.now();
           const yoloImage = await this.yoloService.processYolo(img);
           const endTime = performance.now();
-          this.yoloprocessingTime = `YOLO Processing Time: ${(endTime - startTime).toFixed(2)} ms`;
+          this.yoloprocessingTime = `YOLO Processing Time: ${(
+            endTime - startTime
+          ).toFixed(2)} ms`;
 
           // Update the image to display YOLO results
           this.yoloImage = yoloImage;
@@ -138,7 +140,7 @@ export class DocumentScannerComponent {
     // Set canvas size to match the video feed
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     // Draw the current video frame onto the canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
   }

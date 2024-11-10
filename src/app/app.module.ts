@@ -3,7 +3,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
-import { DocumentScannerComponent } from './document-scanner/document-scanner.component';
+import { DocumentScannerComponent } from './components/document-scanner/document-scanner.component';
 
 @NgModule({
   declarations: [
