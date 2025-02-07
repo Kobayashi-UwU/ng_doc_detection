@@ -15,6 +15,18 @@ This is a document detection outline using OpenCV and the Yolo model to detect a
 'sunglasses',
 ```
 
+## Test Result
+### Galaxy A05
+```
+Minimum Requirement
+Ram : 2-4 GB
+CPU : 1.5 GHz (Octa-core)
+```
+Image Size | Process Time
+--- | --- 
+w - 640, h - 640 | 1.8 Sec
+w - 200, h - 200 | 0.48 Sec
+
 ## How to start project
 ```
 npm install
